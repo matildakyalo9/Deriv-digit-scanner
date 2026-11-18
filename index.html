@@ -3,406 +3,211 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Deriv Digit Scanner V3</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deriv Digit Scanner</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;padding:16px;background:#0b1220;color:#f4f7fb;font-family:Arial,sans-serif}
-main{max-width:760px;margin:auto}
-h1{font-size:25px;margin:4px 0 6px}
-.sub{color:#9eacc2;font-size:13px;margin-bottom:18px}
-.panel{background:#151f31;border:1px solid #29364c;border-radius:14px;padding:15px;margin:12px 0}
-label{display:block;color:#b9c5d7;font-size:13px;margin:10px 0 6px}
-select,button{font:inherit;border-radius:9px;border:1px solid #3a4a64;padding:12px;background:#0e1829;color:white;width:100%}
-button{background:#2563eb;border:0;font-weight:bold;margin-top:12px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stat{background:#0e1829;padding:12px;border-radius:10px}
-.small{font-size:12px;color:#9eacc2}
-.big{font-size:25px;font-weight:bold;margin-top:5px}
-.signal{font-size:23px;font-weight:bold;margin:8px 0}
-.green{color:#4ade80}
-.yellow{color:#facc15}
-.red{color:#fb7185}
-#digits{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.digit{width:32px;height:36px;display:grid;place-items:center;border-radius:7px;background:#26364e;font-weight:bold}
-.digit.latest{outline:2px solid #60a5fa;background:#1d4ed8}
-.bar{height:10px;background:#26364e;border-radius:9px;overflow:hidden;margin-top:8px}
-.bar>div{height:100%;background:#22c55e;width:0}
-.note{font-size:12px;line-height:1.5;color:#aebbd0}
-footer{font-size:11px;color:#8291a8;text-align:center;margin:18px 0}
-@media(max-width:420px){body{padding:11px}.grid{gap:8px}.panel{padding:12px}}
+body{margin:0;padding:15px;background:#101827;color:white;font-family:Arial}
+main{max-width:600px;margin:auto}
+h2{text-align:center;color:#39d98a}
+.card{background:#1c293b;padding:15px;border-radius:12px;margin:12px 0}
+label{display:block;margin:12px 0 6px}
+select,input,button{width:100%;padding:12px;border-radius:8px;font-size:16px}
+select,input{background:#0e1726;color:white;border:1px solid #526078}
+button{border:0;background:#16a36a;color:white;font-weight:bold;margin-top:12px}
+.stop{background:#c94444}
+.status,.result{background:#0e1726;padding:12px;border-radius:8px;text-align:center;margin-top:9px}
+.big{text-align:center;font-size:38px;color:#39d98a;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.digit{background:#0e1726;padding:10px 3px;text-align:center;border-radius:7px}
+.digit b{display:block;color:#39d98a;font-size:20px}
+small{color:#b7c3d3;line-height:1.5}
 </style>
 </head>
-
 <body>
 <main>
+<h2>DERIV DIGIT SCANNER</h2>
 
-<h1>Deriv Digit Scanner V3</h1>
-<div class="sub">Live synthetic-index digits • Over/Under entry trigger assistant</div>
+<div class="card">
+<div id="status" class="status">Disconnected</div>
 
-<section class="panel">
-<div class="grid">
-
-<div>
-<label for="market">Synthetic index</label>
+<label>Market</label>
 <select id="market">
-<option value="R_10">Volatility 10 Index</option>
-<option value="R_25">Volatility 25 Index</option>
-<option value="R_50">Volatility 50 Index</option>
-<option value="R_75">Volatility 75 Index</option>
-<option value="R_100" selected>Volatility 100 Index</option>
-<option value="1HZ10V">Volatility 10 (1s)</option>
-<option value="1HZ25V">Volatility 25 (1s)</option>
-<option value="1HZ50V">Volatility 50 (1s)</option>
-<option value="1HZ75V">Volatility 75 (1s)</option>
 <option value="1HZ100V">Volatility 100 (1s)</option>
+<option value="1HZ75V">Volatility 75 (1s)</option>
+<option value="1HZ50V">Volatility 50 (1s)</option>
+<option value="1HZ25V">Volatility 25 (1s)</option>
+<option value="1HZ10V">Volatility 10 (1s)</option>
+<option value="R_100">Volatility 100</option>
+<option value="R_75">Volatility 75</option>
+<option value="R_50">Volatility 50</option>
+<option value="R_25">Volatility 25</option>
+<option value="R_10">Volatility 10</option>
 </select>
-</div>
 
-<div>
-<label for="contract">Contract direction</label>
-<select id="contract">
-<option value="over">OVER</option>
-<option value="under">UNDER</option>
+<label>Contract type</label>
+<select id="type">
+<option value="over">Over</option>
+<option value="under">Under</option>
+<option value="even">Even</option>
+<option value="odd">Odd</option>
 </select>
+
+<label>Barrier</label>
+<input id="barrier" type="number" min="0" max="9" value="5">
+
+<button id="start">CONNECT AND START</button>
+<button id="stop" class="stop">STOP SCANNER</button>
 </div>
 
-<div>
-<label for="barrier">Barrier digit</label>
-<select id="barrier"></select>
+<div class="card">
+<h3>Latest digit</h3>
+<div id="latest" class="big">--</div>
+<div id="quote" class="result">Waiting for ticks</div>
 </div>
 
-<div>
-<label for="trigger">Entry trigger digit</label>
-<select id="trigger"></select>
+<div class="card">
+<h3>Suggested entry</h3>
+<div id="signal" class="result">Waiting for data</div>
+<div id="entry" class="result">Suggested entry digit: --</div>
+<div id="rate" class="result">Historical contract rate: --</div>
+<small>Suggestions use recent digit frequency only. They do not predict the next result or guarantee a win.</small>
 </div>
 
+<div class="card">
+<h3>Digit frequency (last 100 ticks)</h3>
+<div id="frequency" class="grid"></div>
 </div>
 
-<button id="connect">Connect / Restart Scanner</button>
-<div id="status" class="small" style="margin-top:10px">Not connected</div>
-</section>
-
-<section class="panel">
-<div class="small">CURRENT SIGNAL</div>
-<div id="signal" class="signal yellow">WAIT — collecting digits</div>
-
-<div class="grid">
-
-<div class="stat">
-<div class="small">Suggested contract</div>
-<div id="suggested" class="big">OVER 3</div>
+<div class="card">
+<h3>Recent digits</h3>
+<div id="recent" class="result">No digits yet</div>
+<div id="total" class="result">Ticks received: 0</div>
 </div>
-
-<div class="stat">
-<div class="small">Suggested entry trigger</div>
-<div id="entry" class="big green">0</div>
-</div>
-
-<div class="stat">
-<div class="small">Last digit received</div>
-<div id="last" class="big">—</div>
-</div>
-
-<div class="stat">
-<div class="small">Sample size</div>
-<div id="sample" class="big">0 / 100</div>
-</div>
-
-</div>
-</section>
-
-<section class="panel">
-<div class="small">RECENT DIGIT HISTORY (NEWEST FIRST)</div>
-<div id="digits"></div>
-</section>
-
-<section class="panel">
-<div class="grid">
-
-<div class="stat">
-<div class="small">Observed winning frequency</div>
-<div id="rate" class="big">—</div>
-<div class="bar"><div id="barfill"></div></div>
-</div>
-
-<div class="stat">
-<div class="small">Winning / losing outcomes</div>
-<div id="counts" class="big">0 / 0</div>
-</div>
-
-</div>
-
-<p id="explain" class="note">
-The scanner needs 100 recent digits before evaluating a signal.
-</p>
-</section>
-
-<section class="panel">
-<div class="small">HOW THE ENTRY SUGGESTION WORKS</div>
-
-<p class="note">
-Example: choose OVER, barrier 3 and trigger digit 0.
-The scanner displays an entry alert only when the latest
-tick digit equals 0 and the last 100-digit sample shows
-at least 60% outcomes above the selected barrier.
-</p>
-
-<p class="note">
-For OVER 3, winning final digits are 4, 5, 6, 7, 8 and 9.
-The trigger digit (0) is the digit you wait to see before
-considering entry. It is not the contract's winning digit.
-</p>
-</section>
-
-<footer>
-Scanner does not place trades. Always verify the contract
-and risk before trading.
-</footer>
-
 </main>
 
 <script>
-const $ = id => document.getElementById(id);
+const APP_ID=1089;
+const $=id=>document.getElementById(id);
+let ws=null,history=[],running=false,timer=null;
 
-for(let n=0;n<=9;n++){
-$('barrier').add(new Option(String(n),String(n),false,n===3));
-$('trigger').add(new Option(String(n),String(n),false,n===0));
+function setStatus(s){$("status").textContent=s;}
+
+function allowed(type,b){
+ let a=[];
+ for(let d=0;d<=9;d++){
+  if(type==="over"&&d>b)a.push(d);
+  if(type==="under"&&d<b)a.push(d);
+  if(type==="even"&&d%2===0)a.push(d);
+  if(type==="odd"&&d%2===1)a.push(d);
+ }
+ return a;
 }
 
-let ws=null;
-let historyDigits=[];
-let lastQuote=null;
-let connected=false;
+function update(){
+ let type=$("type").value;
+ let b=Math.max(0,Math.min(9,Number($("barrier").value)||0));
+ let counts=Array(10).fill(0);
+ history.forEach(d=>counts[d]++);
+ let choices=allowed(type,b);
+ $("frequency").innerHTML=counts.map((n,d)=>
+  `<div class="digit">${d}<b>${n}</b></div>`).join("");
+ $("recent").textContent=history.slice(-30).reverse().join("  ")||"No digits yet";
+ $("total").textContent="Ticks received: "+history.length;
 
-function setStatus(t,cls=''){
-$('status').textContent=t;
-$('status').className='small '+cls;
+ if(!history.length)return;
+ let wins=history.filter(d=>choices.includes(d)).length;
+ let rate=(wins/history.length*100).toFixed(1);
+ $("rate").textContent="Historical contract rate: "+rate+"% ("+wins+"/"+history.length+")";
+
+ if(!choices.length){
+  $("signal").textContent="No valid digits for this barrier";
+  $("entry").textContent="Suggested entry digit: --";
+  return;
+ }
+ let best=choices.reduce((a,c)=>counts[c]<counts[a]?c:a,choices[0]);
+ $("signal").textContent="Selected contract: "+type.toUpperCase()+
+  (type==="over"||type==="under"?" "+b:"");
+ $("entry").textContent="Suggested entry digit: "+best+
+  " (appeared "+counts[best]+" times)";
 }
 
-function digitFromQuote(q){
-const s=String(q);
-const decimals=(s.split('.')[1]||'');
-return Number(decimals.length ? decimals.slice(-1) : s.slice(-1));
-}
-
-function closeSocket(){
-if(ws){
-try{
-ws.onclose=null;
-ws.close();
-}catch(e){}
-}
-ws=null;
-connected=false;
+function stop(){
+ running=false;
+ clearTimeout(timer);
+ if(ws){ws.onclose=null;ws.close();ws=null;}
+ setStatus("Disconnected");
 }
 
 function connect(){
+ stop();
+ running=true;
+ history=[];
+ update();
+ setStatus("Connecting...");
+ let socket;
+ try{
+  socket=new WebSocket("wss://ws.derivws.com/websockets/v3?app_id="+APP_ID);
+ }catch(e){
+  setStatus("Could not create connection");
+  return;
+ }
+ ws=socket;
 
-closeSocket();
+ socket.onopen=()=>{
+  if(ws!==socket)return;
+  setStatus("Connected - receiving ticks");
+  socket.send(JSON.stringify({
+   ticks:$("market").value,
+   subscribe:1
+  }));
+ };
 
-historyDigits=[];
-lastQuote=null;
-render();
+ socket.onmessage=event=>{
+  if(ws!==socket)return;
+  let data;
+  try{data=JSON.parse(event.data);}catch(e){return;}
+  if(data.error){
+   setStatus("API error: "+data.error.message);
+   return;
+  }
+  if(data.msg_type==="tick"&&data.tick){
+   let t=data.tick;
+   let decimals=Number.isInteger(Number(t.pip_size))?Number(t.pip_size):2;
+   let formatted=Number(t.quote).toFixed(decimals);
+   let digit=Number(formatted.slice(-1));
+   if(!Number.isInteger(digit)||digit<0||digit>9)return;
+   history.push(digit);
+   if(history.length>100)history.shift();
+   $("latest").textContent=digit;
+   $("quote").textContent="Latest quote: "+formatted;
+   update();
+  }
+ };
 
-setStatus('Connecting to Deriv…');
+ socket.onerror=()=>{
+  if(ws===socket)setStatus("Connection error - check app ID or network");
+ };
 
-try{
+ socket.onclose=e=>{
+  if(ws!==socket)return;
+  ws=null;
+  if(running){
+   setStatus("Disconnected - reconnecting...");
+   timer=setTimeout(connect,3000);
+  }else{
+   setStatus("Disconnected");
+  }
+ };
+}
 
-ws=new WebSocket(
-'wss://ws.derivws.com/websockets/v3?app_id=1089'
-);
-
-ws.onopen=()=>{
-
-connected=true;
-
-setStatus('Connected. Subscribing to live ticks…','green');
-
-ws.send(JSON.stringify({
-ticks:$('market').value,
-subscribe:1
-}));
-
+$("start").onclick=connect;
+$("stop").onclick=stop;
+$("type").onchange=update;
+$("barrier").oninput=update;
+$("market").onchange=()=>{
+ if(running)connect();
 };
-
-ws.onmessage=(event)=>{
-
-let data;
-
-try{
-data=JSON.parse(event.data);
-}catch(e){
-return;
-}
-
-if(data.error){
-setStatus('Connection error: '+data.error.message,'red');
-return;
-}
-
-if(data.tick){
-
-const q=data.tick.quote;
-
-if(q!==lastQuote){
-
-lastQuote=q;
-
-historyDigits.unshift(digitFromQuote(q));
-
-if(historyDigits.length>100){
-historyDigits.pop();
-}
-
-render();
-
-}
-
-setStatus(
-'Live • '+$('market').selectedOptions[0].text,
-'green'
-);
-
-}
-
-};
-
-ws.onerror=()=>{
-setStatus(
-'Connection problem. Tap Connect / Restart scanner.',
-'red'
-);
-};
-
-ws.onclose=()=>{
-connected=false;
-setStatus(
-'Disconnected. Tap Connect / Restart scanner.',
-'yellow'
-);
-};
-
-}catch(e){
-
-setStatus('Could not start connection: '+e.message,'red');
-
-}
-
-}
-
-function render(){
-
-const barrier=Number($('barrier').value);
-const trigger=Number($('trigger').value);
-const direction=$('contract').value;
-
-const label=direction.toUpperCase()+' '+barrier;
-
-$('suggested').textContent=label;
-$('entry').textContent=trigger;
-
-$('last').textContent=
-historyDigits.length ? historyDigits[0] : '—';
-
-$('sample').textContent=
-historyDigits.length+' / 100';
-
-$('digits').innerHTML='';
-
-historyDigits.slice(0,40).forEach((d,i)=>{
-
-const el=document.createElement('div');
-
-el.className='digit'+(i===0?' latest':'');
-
-el.textContent=d;
-
-$('digits').appendChild(el);
-
-});
-
-if(historyDigits.length<100){
-
-$('signal').textContent='WAIT — collecting digits';
-$('signal').className='signal yellow';
-
-$('rate').textContent='—';
-$('counts').textContent='0 / 0';
-$('barfill').style.width='0%';
-
-$('explain').textContent=
-'Collecting 100 recent ticks before calculating observed frequency. Current sample: '
-+historyDigits.length+'.';
-
-return;
-
-}
-
-const wins=historyDigits.filter(d=>
-direction==='over' ? d>barrier : d<barrier
-).length;
-
-const losses=100-wins;
-const pct=wins;
-
-$('rate').textContent=pct+'%';
-$('counts').textContent=wins+' / '+losses;
-$('barfill').style.width=pct+'%';
-
-const triggerNow=historyDigits[0]===trigger;
-const strong=pct>=60;
-
-if(triggerNow&&strong){
-
-$('signal').textContent=
-'ENTRY TRIGGER HIT — CHECK CONTRACT';
-
-$('signal').className='signal green';
-
-$('explain').textContent=
-'Latest digit is '+trigger+
-' and '+wins+
-' of the last 100 digits were winning outcomes for '+label+
-'. This is historical frequency, not the probability of the next tick.';
-
-}else if(triggerNow&&!strong){
-
-$('signal').textContent=
-'WAIT — TRIGGER HIT, WEAK SAMPLE';
-
-$('signal').className='signal yellow';
-
-$('explain').textContent=
-'Trigger digit '+trigger+
-' appeared, but only '+pct+
-'% of the last 100 outcomes matched '+label+'.';
-
-}else{
-
-$('signal').textContent=
-'WAIT — LOOKING FOR DIGIT '+trigger;
-
-$('signal').className='signal yellow';
-
-$('explain').textContent=
-'Last 100: '+wins+
-' winning outcomes ('+pct+
-'%) for '+label+
-'. Waiting for the selected trigger digit '+trigger+'.';
-
-}
-
-}
-
-$('connect').addEventListener('click',connect);
-$('market').addEventListener('change',connect);
-$('contract').addEventListener('change',render);
-$('barrier').addEventListener('change',render);
-$('trigger').addEventListener('change',render);
-
-render();
-
+update();
 </script>
 </body>
 </html>
