@@ -3,300 +3,290 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deriv Digit Scanner</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deriv Digit Scanner V3</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;padding:16px;background:#101827;color:white;font-family:Arial,sans-serif}
-.container{max-width:600px;margin:auto}
-h2{text-align:center;color:#38bdf8}
-.card{background:#1e293b;padding:15px;border-radius:12px;margin:12px 0}
-label{display:block;margin:12px 0 6px;color:#cbd5e1}
-select,input,button{width:100%;padding:12px;border-radius:8px;border:0;font-size:16px}
-select,input{background:#334155;color:white}
-button{background:#0284c7;color:white;font-weight:bold;margin-top:12px}
-.status{color:#facc15;font-weight:bold}
-.signal{font-size:22px;text-align:center;font-weight:bold;padding:15px}
-.good{color:#4ade80}
-.wait{color:#facc15}
-.digits{display:flex;flex-wrap:wrap;gap:6px}
-.digit{background:#334155;padding:9px;border-radius:6px}
-.small{color:#94a3b8;font-size:13px;line-height:1.5}
-.stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155}
+body{background:#101827;color:white;font-family:Arial;padding:14px;margin:0}
+main{max-width:600px;margin:auto}
+.panel{background:#1b293b;padding:15px;border-radius:12px;margin:12px 0}
+h2{text-align:center;color:#42d6a4}
+select,button{width:100%;padding:13px;border:0;border-radius:8px;margin-top:8px;font-size:16px}
+select{background:#263950;color:white}
+button{background:#16a878;color:white;font-weight:bold}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{background:#263950;padding:12px;border-radius:8px}
+.stat strong{display:block;font-size:20px;margin-top:6px}
+.muted{color:#aab8ca;font-size:13px;line-height:1.5}
+.signal{background:#263950;padding:16px;text-align:center;font-size:22px;font-weight:bold;border-radius:9px}
+.good{color:#42d6a4}.bad{color:#ff7777}.warning{color:#ffd166}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:8px 4px;text-align:center;border-bottom:1px solid #34465d}
 </style>
 </head>
 <body>
-<div class="container">
+<main>
 <h2>DERIV DIGIT SCANNER</h2>
+<p class="muted" style="text-align:center">Version 3 – Automatic Barrier Scanner</p>
 
-<div class="card">
-<div id="status" class="status">Disconnected</div>
-
-<label>Choose market</label>
+<div class="panel">
+<label>Select synthetic index</label>
 <select id="market">
-<option value="1HZ100V">Volatility 100 (1s)</option>
-<option value="1HZ50V">Volatility 50 (1s)</option>
-<option value="1HZ25V">Volatility 25 (1s)</option>
-<option value="1HZ75V">Volatility 75 (1s)</option>
-<option value="1HZ1000V">Volatility 1000 (1s)</option>
-<option value="R_100">Volatility 100</option>
-<option value="R_75">Volatility 75</option>
-<option value="R_50">Volatility 50</option>
-<option value="R_25">Volatility 25</option>
 <option value="R_10">Volatility 10</option>
+<option value="R_25">Volatility 25</option>
+<option value="R_50">Volatility 50</option>
+<option value="R_75">Volatility 75</option>
+<option value="R_100" selected>Volatility 100</option>
+<option value="1HZ10V">Volatility 10 (1s)</option>
+<option value="1HZ25V">Volatility 25 (1s)</option>
+<option value="1HZ50V">Volatility 50 (1s)</option>
+<option value="1HZ75V">Volatility 75 (1s)</option>
+<option value="1HZ100V">Volatility 100 (1s)</option>
 </select>
-
-<label>Contract type</label>
-<select id="contract">
-<option value="over">Over</option>
-<option value="under">Under</option>
-</select>
-
-<label>Barrier (0–9)</label>
-<input id="barrier" type="number" min="0" max="9" value="5">
-
 <button onclick="connect()">CONNECT SCANNER</button>
-<button onclick="disconnect()" style="background:#475569">STOP SCANNER</button>
+<p id="status" class="warning">Not connected</p>
 </div>
 
-<div class="card">
-<h3>Live market</h3>
-<div class="stat"><span>Latest price</span><b id="price">--</b></div>
-<div class="stat"><span>Latest digit</span><b id="digit">--</b></div>
-<div class="stat"><span>Digits collected</span><b id="total">0</b></div>
+<div class="panel">
+<div class="grid">
+<div class="stat">Latest price<strong id="price">--</strong></div>
+<div class="stat">Latest digit<strong id="digit">--</strong></div>
+<div class="stat">Digits collected<strong id="count">0/500</strong></div>
+<div class="stat">New ticks<strong id="ticks">0</strong></div>
+</div>
 </div>
 
-<div class="card">
-<h3>Entry analysis</h3>
-<div id="signal" class="signal wait">WAITING FOR DATA</div>
-<div id="explanation" class="small">
-Connect to Deriv to begin analysing digits.
+<div class="panel">
+<h3>ENTRY RECOMMENDATION</h3>
+<div id="signal" class="signal">WAITING FOR DATA</div>
+<p id="reason" class="muted">Connect to begin scanning.</p>
+<div class="grid">
+<div class="stat">Barrier<strong id="barrier">--</strong></div>
+<div class="stat">Validation rate<strong id="validation">--</strong></div>
+<div class="stat">Training sample<strong id="training">--</strong></div>
+<div class="stat">Validation sample<strong id="testing">--</strong></div>
 </div>
-<div class="stat"><span>Last 20 success rate</span><b id="rate20">--</b></div>
-<div class="stat"><span>Last 100 success rate</span><b id="rate100">--</b></div>
-<div class="stat"><span>Historical comparison</span><b id="comparison">--</b></div>
 </div>
 
-<div class="card">
-<h3>Recent digits</h3>
-<div id="digits" class="digits">Waiting for digits...</div>
+<div class="panel">
+<h3>RECENT DIGITS</h3>
+<p id="history" class="muted">Waiting...</p>
 </div>
 
-<div class="card">
-<h3>Digit frequency (last 100)</h3>
-<div id="frequency" class="small">Waiting for data...</div>
+<div class="panel">
+<h3>BARRIER COMPARISON</h3>
+<div class="scroll">
+<table>
+<thead><tr><th>Type</th><th>Barrier</th><th>Train</th><th>Test</th><th>Baseline</th><th>Difference</th></tr></thead>
+<tbody id="results"><tr><td colspan="6">Waiting for 500 digits</td></tr></tbody>
+</table>
+</div>
 </div>
 
-<div class="card">
-<p class="small">
-IMPORTANT: This scanner analyses historical digit patterns.
-Past digits do not predict future digits. WATCH means a
-pattern deserves attention, not that a trade is guaranteed
-or that an entry has a proven statistical advantage.
-Always verify before trading.
-</p>
+<div class="panel">
+<h3>SIGNAL TRACKING</h3>
+<div class="grid">
+<div class="stat">Signals tested<strong id="tested">0</strong></div>
+<div class="stat">Correct<strong id="correct">0</strong></div>
 </div>
+<p id="rate" class="muted">No signals tested yet.</p>
 </div>
+
+<div class="panel">
+<p class="muted">Important: Historical results do not guarantee future outcomes. A potential entry is only a screening signal, not a guaranteed win. Check contract payouts and practise on demo before risking money.</p>
+</div>
+</main>
 
 <script>
+const ENDPOINT="wss://api.derivws.com/trading/v1/options/ws/public";
+const SIZE=500;
+const TRAIN=250;
+const MIN_LIFT=.05;
+
 let ws=null;
 let digits=[];
-let pipSize=2;
-let reconnectTimer=null;
+let ticks=0;
+let pending=null;
+let lastSignal=-100;
+let tested=0;
+let correct=0;
 
 const $=id=>document.getElementById(id);
 
-function setStatus(message){
- $("status").textContent=message;
+function setStatus(s,c="warning"){
+ $("status").textContent=s;
+ $("status").className=c;
+}
+
+function digitOf(price){
+ let s=String(price);
+ let p=s.split(".");
+ return p.length>1?Number(p[1].slice(-1)):0;
 }
 
 function connect(){
- disconnect();
-
+ if(ws)try{ws.close()}catch(e){}
  digits=[];
- updateDisplay();
- setStatus("Connecting...");
+ ticks=0;
+ pending=null;
+ lastSignal=-100;
+ tested=0;
+ correct=0;
+ $("signal").textContent="CONNECTING...";
+ $("reason").textContent="Connecting to Deriv...";
+ $("results").innerHTML='<tr><td colspan="6">Collecting data...</td></tr>';
+ update();
 
- const market=$("market").value;
-
- ws=new WebSocket(
- "wss://api.derivws.com/trading/v1/options/ws/public"
- );
+ let symbol=$("market").value;
+ try{ws=new WebSocket(ENDPOINT)}
+ catch(e){setStatus("Connection failed","bad");return}
 
  ws.onopen=()=>{
-  setStatus("Connected - loading market data");
-
+  setStatus("Connected. Loading history...","good");
   ws.send(JSON.stringify({
-   ticks_history:market,
-   count:100,
+   ticks_history:symbol,
+   count:SIZE,
    end:"latest",
    style:"ticks"
   }));
  };
 
  ws.onmessage=(event)=>{
-  const data=JSON.parse(event.data);
+  let data;
+  try{data=JSON.parse(event.data)}catch(e){return}
 
   if(data.error){
-   setStatus("API error: "+data.error.message);
+   setStatus(data.error.message,"bad");
+   $("signal").textContent="CONNECTION ERROR";
    return;
   }
 
-  if(data.msg_type==="history"){
-   const prices=data.history?.prices||[];
-   pipSize=data.pip_size??2;
+  if(data.history&&data.history.prices){
+   digits=data.history.prices.map(digitOf).slice(-SIZE);
+   update();
+   analyse();
+   ws.send(JSON.stringify({ticks:symbol,subscribe:1}));
+   setStatus("Live scanner connected","good");
+  }
 
-   prices.forEach(price=>{
-    addDigit(price,false);
-   });
+  if(data.tick){
+   let price=data.tick.quote;
+   let d=digitOf(price);
+   ticks++;
 
-   updateDisplay();
-
-   if(ws && ws.readyState===1){
-    ws.send(JSON.stringify({
-     ticks:market,
-     subscribe:1
-    }));
+   if(pending){
+    let won=pending.type==="OVER"?d>pending.barrier:d<pending.barrier;
+    tested++;
+    if(won)correct++;
+    pending=null;
+    $("tested").textContent=tested;
+    $("correct").textContent=correct;
+    $("rate").textContent="Signal hit rate: "+(100*correct/tested).toFixed(1)+"% ("+correct+"/"+tested+")";
    }
-  }
 
-  if(data.msg_type==="tick"){
-   const tick=data.tick;
-   if(!tick)return;
+   digits.push(d);
+   if(digits.length>SIZE)digits.shift();
 
-   pipSize=tick.pip_size??pipSize;
-   addDigit(tick.quote,true);
+   $("price").textContent=price;
+   $("digit").textContent=d;
+   $("ticks").textContent=ticks;
 
-   $("price").textContent=Number(tick.quote).toFixed(pipSize);
-   updateDisplay();
-   setStatus("LIVE - receiving market data");
+   if(digits.length>=SIZE)analyse();
+   update();
   }
  };
 
- ws.onerror=()=>{
-  setStatus("Connection error. Check your internet.");
- };
+ ws.onerror=()=>setStatus("Connection error. Try reconnecting.","bad");
+ ws.onclose=()=>setStatus("Connection closed","warning");
+}
 
- ws.onclose=()=>{
-  if($("status").textContent.startsWith("LIVE")){
-   setStatus("Connection closed. Reconnect.");
+function score(arr,type,b){
+ let wins=0;
+ for(let d of arr){
+  if(type==="OVER"&&d>b)wins++;
+  if(type==="UNDER"&&d<b)wins++;
+ }
+ return wins/arr.length;
+}
+
+function baseline(type,b){
+ return type==="OVER"?(9-b)/10:b/10;
+}
+
+function analyse(){
+ if(digits.length<SIZE)return;
+
+ let train=digits.slice(0,TRAIN);
+ let test=digits.slice(TRAIN);
+ let list=[];
+
+ for(let type of ["OVER","UNDER"]){
+  for(let b=0;b<=9;b++){
+   let base=baseline(type,b);
+   list.push({
+    type,b,base,
+    tr:score(train,type,b),
+    va:score(test,type,b)
+   });
   }
- };
-}
-
-function addDigit(price,live){
- const formatted=Number(price).toFixed(pipSize);
- const digit=Number(formatted.slice(-1));
-
- if(!Number.isInteger(digit))return;
-
- digits.push(digit);
-
- if(digits.length>100){
-  digits.shift();
  }
 
- if(live){
-  $("price").textContent=formatted;
-  $("digit").textContent=digit;
- }
-}
+ list.forEach(x=>{
+  x.trainLift=x.tr-x.base;
+  x.validLift=x.va-x.base;
+ });
 
-function success(digit){
- const barrier=Number($("barrier").value);
- const contract=$("contract").value;
+ list.sort((a,b)=>b.trainLift-a.trainLift);
+ let best=list[0];
 
- if(!Number.isInteger(barrier)||barrier<0||barrier>9){
-  return false;
- }
+ let valid=list.find(x=>
+  x.tr>x.base+MIN_LIFT &&
+  x.va>x.base+MIN_LIFT
+ );
 
- return contract==="over"
-  ?digit>barrier
-  :digit<barrier;
-}
+ $("training").textContent=train.length;
+ $("testing").textContent=test.length;
 
-function percentage(arr){
- if(!arr.length)return 0;
- return arr.filter(success).length/arr.length*100;
-}
+ if(valid){
+  $("signal").textContent=valid.type+" "+valid.b+" – POTENTIAL ENTRY";
+  $("signal").className="signal good";
+  $("barrier").textContent=valid.b;
+  $("validation").textContent=(valid.va*100).toFixed(1)+"%";
+  $("reason").textContent=
+   "This candidate beat its baseline in both training and validation samples. Training: "+
+   (valid.tr*100).toFixed(1)+"%. Validation: "+
+   (valid.va*100).toFixed(1)+"%. This is historical evidence only.";
 
-function updateDisplay(){
- $("total").textContent=digits.length;
-
- if(digits.length){
-  $("digit").textContent=digits[digits.length-1];
- }
-
- $("digits").innerHTML=digits.slice(-30).reverse()
-  .map(d=>'<span class="digit">'+d+'</span>').join("");
-
- const last20=digits.slice(-20);
- const rate20=percentage(last20);
- const rate100=percentage(digits);
-
- $("rate20").textContent=digits.length>=20
-  ?rate20.toFixed(1)+"%":"Collecting...";
-
- $("rate100").textContent=digits.length>=100
-  ?rate100.toFixed(1)+"%":"Collecting...";
-
- const signal=$("signal");
- const explanation=$("explanation");
-
- if(digits.length<100){
-  signal.textContent="COLLECTING DATA";
-  signal.className="signal wait";
-  explanation.textContent=
-   "Collecting 100 digits before making a comparison.";
-  $("comparison").textContent="--";
+  if(ticks-lastSignal>=10){
+   pending={type:valid.type,barrier:valid.b};
+   lastSignal=ticks;
+  }
  }else{
-  const difference=rate20-rate100;
-
-  $("comparison").textContent=
-   (difference>=0?"+":"")+difference.toFixed(1)+" percentage points";
-
-  if(difference>=10){
-   signal.textContent="WATCH - RECENT PATTERN";
-   signal.className="signal good";
-   explanation.textContent=
-    "The selected outcome appeared more frequently in the last 20 digits than in the last 100. This is historical information, not a reliable prediction.";
-  }else{
-   signal.textContent="WAIT";
-   signal.className="signal wait";
-   explanation.textContent=
-    "There is no strong recent frequency difference under this simple analysis rule. Wait and continue observing.";
-  }
+  $("signal").textContent="NO VALID ENTRY";
+  $("signal").className="signal warning";
+  $("barrier").textContent="--";
+  $("validation").textContent="--";
+  $("reason").textContent="No barrier beat its random baseline by at least 5 percentage points in both samples.";
  }
 
- let frequency="";
-
- for(let i=0;i<=9;i++){
-  const count=digits.filter(d=>d===i).length;
-  frequency+="Digit "+i+": "+count+" ("+
-   (digits.length?(count/digits.length*100).toFixed(1):0)+"%)<br>";
- }
-
- $("frequency").innerHTML=frequency;
+ $("results").innerHTML=list
+  .slice()
+  .sort((a,b)=>b.validLift-a.validLift)
+  .map(x=>`<tr>
+  <td>${x.type}</td>
+  <td>${x.b}</td>
+  <td>${(x.tr*100).toFixed(1)}%</td>
+  <td>${(x.va*100).toFixed(1)}%</td>
+  <td>${(x.base*100).toFixed(1)}%</td>
+  <td>${(x.validLift*100).toFixed(1)}%</td>
+  </tr>`).join("");
 }
 
-function disconnect(){
- if(ws){
-  ws.onclose=null;
-  ws.close();
-  ws=null;
- }
-
- if(reconnectTimer){
-  clearTimeout(reconnectTimer);
-  reconnectTimer=null;
- }
-
- setStatus("Scanner stopped");
+function update(){
+ $("count").textContent=digits.length+"/500";
+ $("ticks").textContent=ticks;
+ $("history").textContent=digits.slice(-30).join("  ");
 }
-
-$("barrier").addEventListener("change",updateDisplay);
-$("contract").addEventListener("change",updateDisplay);
-
 </script>
 </body>
 </html>
