@@ -1,29 +1,302 @@
-DERIV DIGIT SCANNER
-Disconnected
-Synthetic Index
 
-Volatility 10 Index
-Choose Barrier
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deriv Digit Scanner</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#101827;color:white;font-family:Arial,sans-serif}
+.container{max-width:600px;margin:auto}
+h2{text-align:center;color:#38bdf8}
+.card{background:#1e293b;padding:15px;border-radius:12px;margin:12px 0}
+label{display:block;margin:12px 0 6px;color:#cbd5e1}
+select,input,button{width:100%;padding:12px;border-radius:8px;border:0;font-size:16px}
+select,input{background:#334155;color:white}
+button{background:#0284c7;color:white;font-weight:bold;margin-top:12px}
+.status{color:#facc15;font-weight:bold}
+.signal{font-size:22px;text-align:center;font-weight:bold;padding:15px}
+.good{color:#4ade80}
+.wait{color:#facc15}
+.digits{display:flex;flex-wrap:wrap;gap:6px}
+.digit{background:#334155;padding:9px;border-radius:6px}
+.small{color:#94a3b8;font-size:13px;line-height:1.5}
+.stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>DERIV DIGIT SCANNER</h2>
 
-5
-Choose Contract
+<div class="card">
+<div id="status" class="status">Disconnected</div>
 
-UNDER
- CONNECT & SCAN STOP SCANNER
-LATEST DIGIT
--
-Waiting for ticks...
-LIVE SCANNING RESULTS
-Total ticks
-0
-Matching digits
-0
-Match percentage
-0%
-Selected barrier
-Under 5
-Waiting for data...
-Digit Frequency (last 100 ticks)
-Recent Digits
-No digits yet
-This scanner displays historical digit statistics. Past results do not guarantee future results.
+<label>Choose market</label>
+<select id="market">
+<option value="1HZ100V">Volatility 100 (1s)</option>
+<option value="1HZ50V">Volatility 50 (1s)</option>
+<option value="1HZ25V">Volatility 25 (1s)</option>
+<option value="1HZ75V">Volatility 75 (1s)</option>
+<option value="1HZ1000V">Volatility 1000 (1s)</option>
+<option value="R_100">Volatility 100</option>
+<option value="R_75">Volatility 75</option>
+<option value="R_50">Volatility 50</option>
+<option value="R_25">Volatility 25</option>
+<option value="R_10">Volatility 10</option>
+</select>
+
+<label>Contract type</label>
+<select id="contract">
+<option value="over">Over</option>
+<option value="under">Under</option>
+</select>
+
+<label>Barrier (0–9)</label>
+<input id="barrier" type="number" min="0" max="9" value="5">
+
+<button onclick="connect()">CONNECT SCANNER</button>
+<button onclick="disconnect()" style="background:#475569">STOP SCANNER</button>
+</div>
+
+<div class="card">
+<h3>Live market</h3>
+<div class="stat"><span>Latest price</span><b id="price">--</b></div>
+<div class="stat"><span>Latest digit</span><b id="digit">--</b></div>
+<div class="stat"><span>Digits collected</span><b id="total">0</b></div>
+</div>
+
+<div class="card">
+<h3>Entry analysis</h3>
+<div id="signal" class="signal wait">WAITING FOR DATA</div>
+<div id="explanation" class="small">
+Connect to Deriv to begin analysing digits.
+</div>
+<div class="stat"><span>Last 20 success rate</span><b id="rate20">--</b></div>
+<div class="stat"><span>Last 100 success rate</span><b id="rate100">--</b></div>
+<div class="stat"><span>Historical comparison</span><b id="comparison">--</b></div>
+</div>
+
+<div class="card">
+<h3>Recent digits</h3>
+<div id="digits" class="digits">Waiting for digits...</div>
+</div>
+
+<div class="card">
+<h3>Digit frequency (last 100)</h3>
+<div id="frequency" class="small">Waiting for data...</div>
+</div>
+
+<div class="card">
+<p class="small">
+IMPORTANT: This scanner analyses historical digit patterns.
+Past digits do not predict future digits. WATCH means a
+pattern deserves attention, not that a trade is guaranteed
+or that an entry has a proven statistical advantage.
+Always verify before trading.
+</p>
+</div>
+</div>
+
+<script>
+let ws=null;
+let digits=[];
+let pipSize=2;
+let reconnectTimer=null;
+
+const $=id=>document.getElementById(id);
+
+function setStatus(message){
+ $("status").textContent=message;
+}
+
+function connect(){
+ disconnect();
+
+ digits=[];
+ updateDisplay();
+ setStatus("Connecting...");
+
+ const market=$("market").value;
+
+ ws=new WebSocket(
+ "wss://api.derivws.com/trading/v1/options/ws/public"
+ );
+
+ ws.onopen=()=>{
+  setStatus("Connected - loading market data");
+
+  ws.send(JSON.stringify({
+   ticks_history:market,
+   count:100,
+   end:"latest",
+   style:"ticks"
+  }));
+ };
+
+ ws.onmessage=(event)=>{
+  const data=JSON.parse(event.data);
+
+  if(data.error){
+   setStatus("API error: "+data.error.message);
+   return;
+  }
+
+  if(data.msg_type==="history"){
+   const prices=data.history?.prices||[];
+   pipSize=data.pip_size??2;
+
+   prices.forEach(price=>{
+    addDigit(price,false);
+   });
+
+   updateDisplay();
+
+   if(ws && ws.readyState===1){
+    ws.send(JSON.stringify({
+     ticks:market,
+     subscribe:1
+    }));
+   }
+  }
+
+  if(data.msg_type==="tick"){
+   const tick=data.tick;
+   if(!tick)return;
+
+   pipSize=tick.pip_size??pipSize;
+   addDigit(tick.quote,true);
+
+   $("price").textContent=Number(tick.quote).toFixed(pipSize);
+   updateDisplay();
+   setStatus("LIVE - receiving market data");
+  }
+ };
+
+ ws.onerror=()=>{
+  setStatus("Connection error. Check your internet.");
+ };
+
+ ws.onclose=()=>{
+  if($("status").textContent.startsWith("LIVE")){
+   setStatus("Connection closed. Reconnect.");
+  }
+ };
+}
+
+function addDigit(price,live){
+ const formatted=Number(price).toFixed(pipSize);
+ const digit=Number(formatted.slice(-1));
+
+ if(!Number.isInteger(digit))return;
+
+ digits.push(digit);
+
+ if(digits.length>100){
+  digits.shift();
+ }
+
+ if(live){
+  $("price").textContent=formatted;
+  $("digit").textContent=digit;
+ }
+}
+
+function success(digit){
+ const barrier=Number($("barrier").value);
+ const contract=$("contract").value;
+
+ if(!Number.isInteger(barrier)||barrier<0||barrier>9){
+  return false;
+ }
+
+ return contract==="over"
+  ?digit>barrier
+  :digit<barrier;
+}
+
+function percentage(arr){
+ if(!arr.length)return 0;
+ return arr.filter(success).length/arr.length*100;
+}
+
+function updateDisplay(){
+ $("total").textContent=digits.length;
+
+ if(digits.length){
+  $("digit").textContent=digits[digits.length-1];
+ }
+
+ $("digits").innerHTML=digits.slice(-30).reverse()
+  .map(d=>'<span class="digit">'+d+'</span>').join("");
+
+ const last20=digits.slice(-20);
+ const rate20=percentage(last20);
+ const rate100=percentage(digits);
+
+ $("rate20").textContent=digits.length>=20
+  ?rate20.toFixed(1)+"%":"Collecting...";
+
+ $("rate100").textContent=digits.length>=100
+  ?rate100.toFixed(1)+"%":"Collecting...";
+
+ const signal=$("signal");
+ const explanation=$("explanation");
+
+ if(digits.length<100){
+  signal.textContent="COLLECTING DATA";
+  signal.className="signal wait";
+  explanation.textContent=
+   "Collecting 100 digits before making a comparison.";
+  $("comparison").textContent="--";
+ }else{
+  const difference=rate20-rate100;
+
+  $("comparison").textContent=
+   (difference>=0?"+":"")+difference.toFixed(1)+" percentage points";
+
+  if(difference>=10){
+   signal.textContent="WATCH - RECENT PATTERN";
+   signal.className="signal good";
+   explanation.textContent=
+    "The selected outcome appeared more frequently in the last 20 digits than in the last 100. This is historical information, not a reliable prediction.";
+  }else{
+   signal.textContent="WAIT";
+   signal.className="signal wait";
+   explanation.textContent=
+    "There is no strong recent frequency difference under this simple analysis rule. Wait and continue observing.";
+  }
+ }
+
+ let frequency="";
+
+ for(let i=0;i<=9;i++){
+  const count=digits.filter(d=>d===i).length;
+  frequency+="Digit "+i+": "+count+" ("+
+   (digits.length?(count/digits.length*100).toFixed(1):0)+"%)<br>";
+ }
+
+ $("frequency").innerHTML=frequency;
+}
+
+function disconnect(){
+ if(ws){
+  ws.onclose=null;
+  ws.close();
+  ws=null;
+ }
+
+ if(reconnectTimer){
+  clearTimeout(reconnectTimer);
+  reconnectTimer=null;
+ }
+
+ setStatus("Scanner stopped");
+}
+
+$("barrier").addEventListener("change",updateDisplay);
+$("contract").addEventListener("change",updateDisplay);
+
+</script>
+</body>
+</html>
